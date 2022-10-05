@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build": "vite build",
+    "lint": "tsc --noEmit --watch"
   },
   "devDependencies": {
     "typescript": "^4.6.4",

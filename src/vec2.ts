@@ -33,7 +33,7 @@ export class Vec2 {
     return Math.sqrt(this.length_squared)
   }
 
-  get normalize() {
+  get normalize(): Vec2 | undefined {
     if (this.length === 0) {
       return undefined
     }
@@ -51,6 +51,9 @@ export class Vec2 {
   get angle(): number {
     return Math.atan2(this.y, this.x)
   }
+
+  x: number
+  y: number
 
   constructor(x: number, y: number) {
     this.x = x
@@ -195,16 +198,32 @@ export class Matrix {
 
   readonly array_t: Float32Array
 
+
+  a: number
+  b: number
+  c: number
+  d: number
+  tx: number
+  ty: number
+
   // a c tx
   // b d ty
   // 0 0 1
   constructor(
-    readonly a: number,
-    readonly b: number,
-    readonly c: number,
-    readonly d: number,
-    readonly tx: number,
-    readonly ty: number) {
+    a: number,
+    b: number,
+    c: number,
+    d: number,
+    tx: number,
+    ty: number) {
+
+    this.a = a
+    this.b = b
+    this.c = c
+    this.d = d
+    this.tx = tx
+    this.ty = ty
+
     this.array_t = new Float32Array([
       a, b, 0,
       c, d, 0,
@@ -230,6 +249,8 @@ export class Matrix {
     this.d = d
     this.tx = tx
     this.ty = ty
+
+    return this
   }
 
   rotate(r: number): Matrix {
@@ -316,18 +337,7 @@ export class Matrix {
     this.ty = ty
   }
 
-  transform_in(scale: Vec2, rotation: number, translate: Vec2, pivot: Vec2 = Vec2.half) {
-
-    /*
-    this.set_in(Matrix.unit)
-    this.translate_in(-0.5, -0.5)
-    this.scale_in(scale.x, scale.y)
-    this.translate_in(0.5, 0.5)
-    this.translate_in(-scale.x*0.5, -scale.y*0.5)
-    this.rotate_in(rotation)
-    //this.translate_in(scale.x * 0.5, scale.y * 0.5)
-    this.translate_in(translate.x, translate.y)
-   */
+  transform_in(scale: Vec2, rotation: number, translate: Vec2, pivot: Vec2 = Vec2.unit.half) {
 
    this.a = Math.cos(rotation) * scale.x
    this.b = Math.sin(rotation) * scale.x
@@ -359,6 +369,9 @@ export class Circle {
     return this
   }
 
+  o: Vec2
+  r: number
+
   constructor(o: Vec2, r: number) {
     this.o = o
     this.r = r
@@ -379,7 +392,7 @@ export class Line {
   }
 
   get normal() {
-    return this.parallel.perpendicular
+    return this.parallel?.perpendicular
   }
 
   get angle() {
@@ -398,7 +411,7 @@ export class Line {
   segments(ns: Array<number>, xs: Array<number>) {
 
     return ns.map((_, i) => 
-           this.a.add(this.normal.scale(xs[i]).add(this.parallel.scale(this.length * _))))
+           this.a.add(this.normal!.scale(xs[i]).add(this.parallel!.scale(this.length * _))))
 
   }
 
