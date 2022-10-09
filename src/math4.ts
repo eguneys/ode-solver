@@ -181,6 +181,10 @@ export class Vec3 {
     return this
   }
 
+  copy_in(v: Vec3) {
+    return this.set_in(v.x, v.y, v.z)
+  }
+
 }
 
 

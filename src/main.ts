@@ -3,28 +3,45 @@ import './style.css'
 //import { XPBD, Body, Pose } from './pbd'
 import { Vec3, Quat } from './math4'
 import { Vec2, Circle } from './vec2'
+import { XPBD, Particle, Constraint, DistanceConstraint } from './pbd_course'
 
 const app = (element: HTMLElement) => {
 
   let g = Canvas.make(1920, 1080, element)
 
-  let r = Circle.make(200, 200, 30)
+  let particles: Array<Particle> = [
+    Particle.make(100, Vec3.make(500, 0, 0), Vec3.unit),
+    Particle.make(100, Vec3.make(100, 0, 0), Vec3.unit),
+    Particle.make(100, Vec3.make(200, 10, 10), Vec3.unit),
+  ]
+  let constraints: Array<Constraint> = [
+    new DistanceConstraint(particles[0], 
+                           particles[2],
+                           200,
+                           1,
+                           1)
+  ]
+
+  let xpbd = new XPBD(15, particles, constraints)
 
   loop((dt: number) => {
 
-    update(r, dt)
+    particles.forEach(_ => {
+      _.force = Vec3.unit
+    })
+    xpbd.update(dt)
+
 
     g.clear()
     g.fr('hsl(0, 20%, 50%)', 0, 0, 1920, 1080)
     g.fr('hsl(0, 70%, 40%)', 0, 1000, 1920, 20)
 
-    g.fr('hsl(0, 80%, 50%)', r.x, r.y, r.r, r.r)
+    particles.forEach(p => {
+      let { x, y } = p.position
+      g.fr('hsl(0, 80%, 50%)', x, y, 30, 30)
+    })
 
   })
-}
-
-function update(r: Circle, dt: number) {
-
 }
 
 
