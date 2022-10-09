@@ -1,34 +1,107 @@
 import './style.css'
 
-//import { XPBD, Body, Pose } from './pbd'
+import { Input } from './input'
 import { Vec3, Quat } from './math4'
 import { Vec2, Circle } from './vec2'
-import { XPBD, Particle, Constraint, DistanceConstraint } from './pbd_course'
+import { XPBD, Particle, Constraint, 
+  DistanceConstraint,
+  FloorConstraint } from './pbd_course'
 
 const app = (element: HTMLElement) => {
 
+
+  let i = new Input().init()
+
   let g = Canvas.make(1920, 1080, element)
 
+  let player = Particle.make(30, Vec3.make(500, 0, 0), Vec3.zero)
+
   let particles: Array<Particle> = [
-    Particle.make(100, Vec3.make(500, 0, 0), Vec3.unit),
-    Particle.make(100, Vec3.make(100, 0, 0), Vec3.unit),
-    Particle.make(100, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(20, Vec3.make(500, 0, 0), Vec3.unit),
+    Particle.make(10, Vec3.make(100, 0, 0), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    player,
   ]
   let constraints: Array<Constraint> = [
-    new DistanceConstraint(particles[0], 
-                           particles[2],
-                           200,
+    new DistanceConstraint(player,
+                           particles[2], 
+                           50,
                            1,
-                           1)
+                           1),
+    new DistanceConstraint(particles[2],
+                           particles[3], 
+                           50,
+                           1,
+                           1),
+    new FloorConstraint(particles[3],
+                        1000,
+                        100,
+                        0.3, 1),
+
+    new FloorConstraint(particles[2],
+                        1000,
+                        100,
+                        0.2, 1),
+    new FloorConstraint(player,
+                        1000,
+                        100,
+                        0.4, 1)
   ]
 
-  let xpbd = new XPBD(15, particles, constraints)
+  let xpbd = new XPBD(10, particles, constraints)
 
+  let ci = 0
   loop((dt: number) => {
+    i.update(dt)
+
+    let right = i.been_ons.find(_ => _.includes('ArrowRight'))
+    let left = i.been_ons.find(_ => _.includes('ArrowLeft'))
+    let s = i.just_ons.includes('s')
 
     particles.forEach(_ => {
-      _.force = Vec3.unit
+      _.force = Vec3.make(0, 10, 0)
     })
+
+    if (s) {
+      ci = 30
+    }
+
+    if (ci > 0) {
+      ci--;
+      player.force = Vec3.make(0, -ci * 4, 0)
+    }
+
+    if (right) {
+      player.force.add_in(Vec3.make(20, 0, 0))
+    }
+    if (left) {
+      player.force.add_in(Vec3.make(-15, 0, 0))
+    }
     xpbd.update(dt)
 
 
@@ -43,6 +116,8 @@ const app = (element: HTMLElement) => {
 
   })
 }
+
+
 
 
 class Canvas {

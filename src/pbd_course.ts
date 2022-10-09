@@ -60,6 +60,28 @@ export abstract class Constraint {
   constructor(readonly ps: Array<Particle>, readonly k: number, readonly alpha: number) {}
 }
 
+export class FloorConstraint extends Constraint {
+  get C() {
+    return this._y - this.p1.position.y - this.l0
+  }
+
+  Gradient(_: Particle, i: number) {
+    let y = this._y - _.position.y
+    let res = y > this.l0 ? 0 : -1
+    return Vec3.make(0, res, 0)
+  }
+
+
+  constructor(readonly p1: Particle,
+              readonly _y: number,
+              readonly l0: number,
+             readonly k: number,
+             readonly alpha: number) {
+               super([p1], k, alpha)
+              }
+
+}
+
 export class DistanceConstraint extends Constraint {
 
   get C() {
