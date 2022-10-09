@@ -369,8 +369,17 @@ export class Circle {
     return this
   }
 
+  get x() {
+    return this.o.x
+  }
+
+  get y() {
+    return this.o.y
+  }
+
   o: Vec2
   r: number
+
 
   constructor(o: Vec2, r: number) {
     this.o = o
