@@ -1,5 +1,6 @@
 import './style.css'
 
+import { ticks } from './shared'
 import { Input } from './input'
 import { Vec3, Quat } from './math4'
 import { Vec2, Circle } from './vec2'
@@ -21,30 +22,6 @@ const app = (element: HTMLElement) => {
     Particle.make(10, Vec3.make(100, 0, 0), Vec3.unit),
     Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
     Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
-    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
     player,
   ]
   let constraints: Array<Constraint> = [
@@ -52,7 +29,7 @@ const app = (element: HTMLElement) => {
                            particles[2], 
                            50,
                            1,
-                           1),
+                           0.5),
     new DistanceConstraint(particles[2],
                            particles[3], 
                            50,
@@ -73,35 +50,47 @@ const app = (element: HTMLElement) => {
                         0.4, 1)
   ]
 
-  let xpbd = new XPBD(10, particles, constraints)
+  let xpbd = new XPBD(6, particles, constraints)
 
+  let li = 0
+  let ri = 0
   let ci = 0
   loop((dt: number) => {
     i.update(dt)
 
     let right = i.been_ons.find(_ => _.includes('ArrowRight'))
     let left = i.been_ons.find(_ => _.includes('ArrowLeft'))
-    let s = i.just_ons.includes('s')
+    let s = i.been_ons.find(_ => _.includes('s'))
 
     particles.forEach(_ => {
       _.force = Vec3.make(0, 10, 0)
     })
 
     if (s) {
-      ci = 30
+      ci = Math.min(100, Math.sin(s[1] / ticks.half * Math.PI * 2) * 60)
+    }
+
+    if (right) {
+      ri = Math.min(30, 10 + ci + (right[1] / ticks.half) * 10)
+    }
+    if (left) {
+      li = Math.min(30, 10 + ci + (left[1] / ticks.half) * 10)
+    }
+
+    if (li > 0) {
+      li--;
+      player.force.add_in(Vec3.left.scale(li))
+    }
+    if (ri > 0) {
+      ri--;
+      player.force.add_in(Vec3.right.scale(ri))
     }
 
     if (ci > 0) {
       ci--;
-      player.force = Vec3.make(0, -ci * 4, 0)
+      player.force.add_in(Vec3.up.scale(ci))
     }
 
-    if (right) {
-      player.force.add_in(Vec3.make(20, 0, 0))
-    }
-    if (left) {
-      player.force.add_in(Vec3.make(-15, 0, 0))
-    }
     xpbd.update(dt)
 
 
