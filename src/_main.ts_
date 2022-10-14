@@ -1,0 +1,109 @@
+import './style.css'
+
+import { ticks } from './shared'
+import { Input } from './input'
+import { Vec3, Quat } from './math4'
+import { Vec2, Circle } from './vec2'
+import { XPBD, Particle, Constraint, 
+  DistanceConstraint,
+  FloorConstraint } from './pbd_course'
+
+const app = (element: HTMLElement) => {
+
+
+  let i = new Input().init()
+
+  let g = Canvas.make(1080, 1920, element)
+
+  let player = Particle.make(30, Vec3.make(500, 0, 0), Vec3.zero)
+
+  let particles: Array<Particle> = [
+    Particle.make(20, Vec3.make(500, 0, 0), Vec3.unit),
+    Particle.make(10, Vec3.make(100, 0, 0), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    Particle.make(10, Vec3.make(200, 10, 10), Vec3.unit),
+    player,
+  ]
+  let constraints: Array<Constraint> = [
+    new DistanceConstraint(player,
+                           particles[2], 
+                           50,
+                           1,
+                           0.5),
+    new DistanceConstraint(particles[2],
+                           particles[3], 
+                           50,
+                           1,
+                           1),
+    new FloorConstraint(particles[3],
+                        1000,
+                        100,
+                        0.3, 1),
+
+    new FloorConstraint(particles[2],
+                        1000,
+                        100,
+                        0.2, 1),
+    new FloorConstraint(player,
+                        1000,
+                        100,
+                        0.4, 1)
+  ]
+
+  let xpbd = new XPBD(6, particles, constraints)
+
+  let li = 0
+  let ri = 0
+  let ci = 0
+  loop((dt: number) => {
+    i.update(dt)
+
+    let right = i.been_ons.find(_ => _.includes('ArrowRight'))
+    let left = i.been_ons.find(_ => _.includes('ArrowLeft'))
+    let s = i.been_ons.find(_ => _.includes('s'))
+
+    particles.forEach(_ => {
+      _.force = Vec3.make(0, 10, 0)
+    })
+
+    if (s) {
+      ci = Math.min(100, Math.sin(s[1] / ticks.half * Math.PI * 2) * 60)
+    }
+
+    if (right) {
+      ri = Math.min(30, 10 + ci + (right[1] / ticks.half) * 10)
+    }
+    if (left) {
+      li = Math.min(30, 10 + ci + (left[1] / ticks.half) * 10)
+    }
+
+    if (li > 0) {
+      li--;
+      player.force.add_in(Vec3.left.scale(li))
+    }
+    if (ri > 0) {
+      ri--;
+      player.force.add_in(Vec3.right.scale(ri))
+    }
+
+    if (ci > 0) {
+      ci--;
+      player.force.add_in(Vec3.up.scale(ci))
+    }
+
+    xpbd.update(dt)
+
+
+    g.clear()
+    g.fr('hsl(0, 20%, 50%)', 0, 0, 1920, 1080)
+    g.fr('hsl(0, 70%, 40%)', 0, 1000, 1920, 20)
+
+    particles.forEach(p => {
+      let { x, y } = p.position
+      g.fr('hsl(0, 80%, 50%)', x, y, 30, 30)
+    })
+
+  })
+}
+
+app(document.getElementById('app')!)
