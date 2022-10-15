@@ -18,10 +18,15 @@ const rect_orig = (rect: Rectangle, o: Vec2) => {
 let fen = `
 ########
 #......#
-#a.gg..#
-#c.gg.a#
-#o....o#
+#rrgg..#
+#rrgg..#
+#......#
 ########
+`
+
+let fen2 = `
+aa
+aa
 `
 
 export type Fen = string
@@ -128,37 +133,44 @@ class Body {
     return new Body(gs, infos.map(_ => _.p), cs, infos)
   }
 
-  d_c(v: Vec3, p1: Particle) {
-    let p2 = Particle.make(Infinity, v, Vec3.zero)
-    let c = new DistanceConstraint(p1, p2, 0, 1, 1)
-    if (this._drag_c) {
-      this.constraints.splice(this.constraints.indexOf(this._drag_c), 1, c)
-    } else {
-      this.constraints.push(c)
+  d_c(v: Vec3, p1: ParticleInfo) {
+    let o = Particle.make(Infinity, v, Vec3.zero)
+    let o_p1 = Vec3.zero
+    let g = this.group_of(p1)
+    if (g) {
+
+      let _drag_c = g.map(p2 => 
+        new DistanceConstraintPlus(p2.p, o, p1.p.position.sub(p2.p.position).add(o_p1), 0.1, 0))
+        this._drag_c = _drag_c
     }
-    this._drag_c = c
+
   }
 
   d_c_clear() {
-    if (this._drag_c) {
-      this.constraints.splice(this.constraints.indexOf(this._drag_c), 1)
-      this._drag_c = undefined
-    }
+    this._drag_c = undefined
   }
 
   group_of(p: ParticleInfo) {
     return this.groups.find(_ => _.find(_ => _ === p))
   }
 
-  _drag_c?: Constraint
-  xpbd: XPBD
+  get constraints() {
+    if (this._drag_c) {
+      return [...this._constraints, ...this._drag_c]
+    }
+    return this._constraints
+  }
+
+  _drag_c?: Array<Constraint>
+  get xpbd() {
+    return new XPBD(2, this.particles, this.constraints)
+  }
 
   constructor(readonly groups: Array<Array<ParticleInfo>>,
               readonly particles: Array<Particle>,
-              readonly constraints: Array<Constraint>,
+              readonly _constraints: Array<Constraint>,
               readonly infos: Array<ParticleInfo>) {
               
-                this.xpbd = new XPBD(2, particles, constraints)
               }
 
 
@@ -178,7 +190,7 @@ const app = (element: HTMLElement) => {
 
   let ref = Ref.make(element)
 
-  let _drag_particle: [Vec3, Particle] | undefined = undefined
+  let _drag_particle: [Vec3, ParticleInfo] | undefined = undefined
 
   make_drag({
     on_drag(e) {
@@ -194,14 +206,14 @@ const app = (element: HTMLElement) => {
           })
 
           if (i) {
-            _drag_particle = [Vec3.make(o.x, o.y, 0), i.p]
+            _drag_particle = [Vec3.make(o.x, o.y, 0), i]
           } 
         }
       }
     },
     on_up() {
       _drag_particle = undefined
-      b.d_c_clear()
+      //b.d_c_clear()
     }
   }, element)
 
@@ -213,9 +225,7 @@ const app = (element: HTMLElement) => {
 
 
     if (_drag_particle) {
-
       b.d_c(..._drag_particle)
-
     }
 
     b.update(dt)
