@@ -17,35 +17,26 @@ const rect_orig = (rect: Rectangle, o: Vec2) => {
 
 let fen = `
 ########
-#ooaooa#
-#acggac#
-#caggca#
 #......#
+#a.gg..#
+#c.gg.a#
+#o....o#
 ########
 `
 
 export type Fen = string
 
-const row_col = (row: number, col: number) => {
-  return row + col * 100
-}
-
-const row_col_split = (rc: number) => {
-  return [rc % 100, Math.floor(rc / 100)]
-}
-
 export type ParticleInfo = {
   p: Particle,
   char: string,
-  row: number,
-  col: number
+  pos: Vec2,
 }
 
 class Body {
 
   static from_fen = (fen: Fen) => {
 
-    let gs: Array<Array<Particle>> = []
+    let gs: Array<Array<ParticleInfo>> = []
     let cs: Array<Constraint> = []
     let infos: Array<ParticleInfo> = []
 
@@ -56,52 +47,90 @@ class Body {
       nb_rows = row + 1
       lines.split('').forEach((char: string, col: number) => {
         nb_cols = col + 1
-        ms.set(row_col(row, col), char)
+        ms.set(Vec2.make(col, row).key, char)
       })
     })
 
-    for (let [rc, char] of ms) {
-      let [row, col] = row_col_split(rc)
-      let p = Particle.make(8, Vec3.make(100 + col * 120, 100 + row * 120, 0), Vec3.zero)
+    for (let [key, char] of ms) {
+      let v = Vec2.from_key(key)
+      let mass = 100
+      if (char === '#') {
+        mass = Infinity
+      }
+      let p = Particle.make(mass, Vec3.make(100 + v.x * 120, 100 + v.y * 120, 0), Vec3.zero)
 
       let i = {
         p,
         char,
-        row,
-        col
+        pos: v
       }
       infos.push(i)
     }
 
+    let i_solids = infos.filter(_ => _.char !== '.')
 
-    
+    i_solids.forEach(_ => {
+      i_solids.forEach(_2 => {
+        if (_ === _2) { return }
+
+        let alpha = _.char === '#' || _2.char === '#' ? 1 : 1
+
+        let c = 
+          new DistanceCollideConstraint(_.p, _2.p, 120, 1, 0)
+
+        cs.push(c)
+      })
+    })
+
+    function add_neighbours_to_group(_: ParticleInfo, group: Array<ParticleInfo>) {
+      if (gs.find(g => g.find(_a => _a === _))) {
+        return
+      }
+
+      if (group.length === 0) {
+        gs.push(group)
+      }
+
+      group.push(_)
+
+      _.pos.neighbours.forEach(vn => {
+        let n = i_solids.find(_ => _.pos.key === vn.key)
+        if (n) {
+          if (n.char === _.char) {
+            add_neighbours_to_group(n, group)
+          }
+        }
+      })
+    }
+    i_solids.forEach(_ => {
+      add_neighbours_to_group(_, [])
+    })
+
+    gs.forEach(g => {
+      g.forEach(i => {
+        g.forEach(i2 => {
+          if (i.char === '#') { return }
+          if (i === i2) { return }
+          
+          let v = i2.pos.sub(i.pos).scale(120)
+
+          let c = new DistanceConstraintPlus(i.p,
+                                 i2.p,
+                                 Vec3.make(v.x, v.y, 0),
+                                 1,
+                                 0)
+          cs.push(c)
+        })
+      })
+    })
+
+
     return new Body(gs, infos.map(_ => _.p), cs, infos)
   }
 
-
-  static make = () => {
-    let a = Particle.make(20, Vec3.make(250, 300, 0), Vec3.zero)
-    let b = Particle.make(20, Vec3.make(450, 300, 0), Vec3.zero)
-    let c = Particle.make(20, Vec3.make(650, 300, 0), Vec3.zero)
-    let d = Particle.make(20, Vec3.make(850, 300, 0), Vec3.zero)
-
-    let m = Particle.make(20, Vec3.make(500, 500, 0), Vec3.zero)
-
-    let g = [[a, b], [c], [d]]
-    let p = [a, b, c, d]
-
-    let cs: Array<Constraint> = [
-      new DistanceConstraintPlus(a, b, Vec3.right.scale(200), 1, 1),
-      new DistanceConstraintPlus(b, a, Vec3.left.scale(200), 1, 1),
-      new DistanceCollideConstraint(a, c, 100, 1, 1)
-    ]
-
-    return new Body(g, p, cs, [])
-  }
-
   d_c(v: Vec3, p1: Particle) {
-    let p2 = Particle.make(100000, v, Vec3.zero)
-    let c = new DistanceConstraint(p1, p2, 0, 0.5, 1)
+    let p2 = Particle.make(Infinity, v, Vec3.zero)
+    let c = new DistanceConstraint(p1, p2, 0, 1, 1)
     if (this._drag_c) {
       this.constraints.splice(this.constraints.indexOf(this._drag_c), 1, c)
     } else {
@@ -110,15 +139,26 @@ class Body {
     this._drag_c = c
   }
 
+  d_c_clear() {
+    if (this._drag_c) {
+      this.constraints.splice(this.constraints.indexOf(this._drag_c), 1)
+      this._drag_c = undefined
+    }
+  }
+
+  group_of(p: ParticleInfo) {
+    return this.groups.find(_ => _.find(_ => _ === p))
+  }
+
   _drag_c?: Constraint
   xpbd: XPBD
 
-  constructor(readonly groups: Array<Array<Particle>>,
+  constructor(readonly groups: Array<Array<ParticleInfo>>,
               readonly particles: Array<Particle>,
               readonly constraints: Array<Constraint>,
               readonly infos: Array<ParticleInfo>) {
               
-                this.xpbd = new XPBD(6, particles, constraints)
+                this.xpbd = new XPBD(2, particles, constraints)
               }
 
 
@@ -135,8 +175,6 @@ const app = (element: HTMLElement) => {
 
 
   let b = Body.from_fen(fen.trim())
-
-  let b2 = Body.make()
 
   let ref = Ref.make(element)
 
@@ -163,6 +201,7 @@ const app = (element: HTMLElement) => {
     },
     on_up() {
       _drag_particle = undefined
+      b.d_c_clear()
     }
   }, element)
 
@@ -185,6 +224,7 @@ const app = (element: HTMLElement) => {
     g.fr('hsl(0, 20%, 50%)', 0, 0, 1080, 1920)
 
     b.infos.forEach(i => {
+      let group = b.group_of(i)
       let { p, char } = i
       let { x, y } = p.position
 
@@ -194,6 +234,14 @@ const app = (element: HTMLElement) => {
       }
       if (char === '#') {
         color = 'hsl(0, 30%, 30%)'
+      }
+
+      if (group?.length === 2) {
+        color = 'hsl(30, 50%, 50%)'
+      }
+
+      if (group?.length === 4) {
+        color = 'hsl(50, 50%, 50%)'
       }
 
       g.fr(color, x - r/2, y - r/2, r, r)

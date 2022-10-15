@@ -34,10 +34,16 @@ export abstract class Constraint {
   dt!: number
 
   get lambda() {
-    return - this.C / (
-      this.ps
+
+    let ll = this.ps
       .map((_i: Particle, i: number) => _i.w * this.Gradient(_i, i).length_squared)
-      .reduce((a: number, b: number) => a + b) + this.alpha / (this.dt * this.dt))
+      .reduce((a: number, b: number) => a + b) 
+
+    if (ll === 0) {
+      return 0
+    }
+
+    return - this.C / (ll + this.alpha / (this.dt * this.dt))
   }
 
   delta_x(i: number) {
@@ -88,13 +94,17 @@ export class DistanceConstraintPlus extends Constraint {
     return this.p1.position.add(this.v)
   }
 
+  get p2_position() {
+    return this.p2.position.sub(this.v)
+  }
+
   get C() {
     return this.p2.position.sub(this.p1_position).length
   }
 
 
   Gradient(_p: Particle, i: number) {
-    let _p2 = _p === this.p1 ? this.p1.position : this.p1_position
+    let _p2 = _p === this.p1 ? this.p2_position : this.p1_position
     return _p.position.sub(_p2).normalize
   }
 

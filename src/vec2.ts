@@ -1,5 +1,11 @@
 export class Vec2 {
 
+  get key() {
+    return [this.x, this.y].join(';')
+  }
+  static from_key = (key: string) =>
+  new Vec2(parseFloat(key.split(';')[0]), parseFloat(key.split(';')[1]))
+
   static from_angle = (n: number) =>
     new Vec2(Math.cos(n), Math.sin(n))
 
@@ -8,6 +14,15 @@ export class Vec2 {
 
   static get unit() { return new Vec2(1, 1) }
   static get zero() { return new Vec2(0, 0) }
+  static get left() { return new Vec2(-1, 0) }
+  static get right() { return new Vec2(1, 0) }
+  static get up() { return new Vec2(0, -1) }
+  static get down() { return new Vec2(0, 1) }
+
+
+  get neighbours() {
+    return [Vec2.up, Vec2.down, Vec2.left, Vec2.right].map(_ => _.add(this))
+  }
 
   get vs(): Array<number> {
     return [this.x, this.y]
