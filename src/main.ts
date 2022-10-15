@@ -2,6 +2,7 @@ import { Canvas, loop } from './debug'
 import { Vec2, Rectangle } from './vec2'
 import { Vec3, Quat } from './math4'
 import { XPBD, Particle, Constraint, 
+  DLineLineConstraint,
   DistanceCollideConstraint,
   DistanceConstraintPlus,
   DistanceConstraint,
@@ -15,7 +16,7 @@ const rect_orig = (rect: Rectangle, o: Vec2) => {
     return rect.x1 <= o.x && o.x <= rect.x2 && rect.y1 <= o.y && o.y <= rect.y2
 }
 
-let fen = `
+let fen2 = `
 ########
 #......#
 #rrgg..#
@@ -24,9 +25,8 @@ let fen = `
 ########
 `
 
-let fen2 = `
-aa
-aa
+let fen = `
+ab
 `
 
 export type Fen = string
@@ -35,6 +35,22 @@ export type ParticleInfo = {
   p: Particle,
   char: string,
   pos: Vec2,
+}
+
+const plines_for_particle = (p: Particle, r: number) => {
+
+  return [Vec3.left, Vec3.right, Vec3.up, Vec3.down].map(d => {
+    let p2 = p.position.add(d.scale(r))
+    
+    let a = p2.add(d.perpendicular.scale(r)),
+      b  = p2.add(d.perpendicular.scale(-r))
+
+    return {
+      p,
+      a,
+      b
+    }
+  })
 }
 
 class Body {
@@ -75,15 +91,24 @@ class Body {
     let i_solids = infos.filter(_ => _.char !== '.')
 
     i_solids.forEach(_ => {
+
+      let _plines = plines_for_particle(_.p, 120)
+
       i_solids.forEach(_2 => {
         if (_ === _2) { return }
 
-        let alpha = _.char === '#' || _2.char === '#' ? 1 : 1
+        let _plines2 = plines_for_particle(_2.p, 120)
 
-        let c = 
-          new DistanceCollideConstraint(_.p, _2.p, 120, 1, 0)
+        //new DistanceCollideConstraint(_.p, _2.p, 120, 1, 0)
 
-        cs.push(c)
+        let _cs = _plines.flatMap(_pline =>
+          _plines2.map(_pline2 =>
+            new DLineLineConstraint(_pline,
+                                       _pline2,
+                                       1,
+                                       1)))
+
+         cs.push(..._cs)
       })
     })
 
@@ -128,7 +153,6 @@ class Body {
         })
       })
     })
-
 
     return new Body(gs, infos.map(_ => _.p), cs, infos)
   }

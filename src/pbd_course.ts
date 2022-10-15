@@ -66,6 +66,76 @@ export abstract class Constraint {
   constructor(readonly ps: Array<Particle>, readonly k: number, readonly alpha: number) {}
 }
 
+export type PLine = {
+  p: Particle,
+  a: Vec3,
+  b: Vec3
+}
+
+function closest_point_on_segment(p: Vec3, a: Vec3, b: Vec3) {
+  let ab = b.sub(a)
+  let t = ab.dot(ab)
+  if (t === 0) {
+    return a.clone
+  }
+  t = Math.max(0, Math.min(1, (p.dot(ab) - a.dot(ab)) / t))
+  return a.add(ab).scale(t)
+}
+
+export class DLineLineConstraint extends Constraint {
+
+  get p2_ab() {
+    let p2_ab = closest_point_on_segment(this.l2.p.position, this.l2.a, this.l2.b)
+    return p2_ab.sub(this.l2.p.position).normalize
+  }
+
+  get C() {
+    let p_a = closest_point_on_segment(this.l1.a, this.l2.a, this.l2.b),
+      p_b = closest_point_on_segment(this.l1.b, this.l2.a, this.l2.b)
+
+    let a_p_a = p_a.sub(this.l1.a),
+      b_p_b = p_b.sub(this.l1.b)
+
+    if (this.p2_ab.dot(a_p_a) > 0) {
+      return a_p_a.length
+    }
+    if (this.p2_ab.dot(b_p_b) > 0) {
+      return b_p_b.length
+    }
+    return 0
+  }
+
+  Gradient(_p: Particle, i: number) {
+    if (_p === this.l2.p) {
+      return Vec3.zero
+    }
+
+    let p_a = closest_point_on_segment(this.l1.a, this.l2.a, this.l2.b),
+      p_b = closest_point_on_segment(this.l1.b, this.l2.a, this.l2.b)
+
+    let a_p_a = p_a.sub(this.l1.a),
+      b_p_b = p_b.sub(this.l1.b)
+
+    if (this.p2_ab.dot(a_p_a) > 0) {
+      console.log(this.l1, this.l2, a_p_a.normalize)
+      return a_p_a.normalize
+    }
+    if (this.p2_ab.dot(b_p_b) > 0) {
+      return b_p_b.normalize
+    }
+    return Vec3.zero
+  }
+
+
+
+  constructor(readonly l1: PLine,
+              readonly l2: PLine,
+              readonly k: number,
+              readonly alpha: number) {
+                super([l1.p, l2.p], k, alpha)
+              }
+}
+
 export class FloorConstraint extends Constraint {
   get C() {
     return this._y - this.p1.position.y - this.l0
