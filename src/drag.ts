@@ -77,6 +77,7 @@ export const make_drag = (hooks: Hooks, $_: HTMLElement) => {
       _cancel_raf?.() 
       _cancel_raf = undefined
       _drag = undefined
+      _m = undefined
     }
   }, $_)
 }

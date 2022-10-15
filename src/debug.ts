@@ -41,8 +41,10 @@ export const loop = (_fn: (dt: number) => void) => {
     let dt = _now - (_last_now || _now)
     _last_now = _now
 
-    _fn(dt)
     dt = Math.max(Math.min(dt, 16), 4)
+
+    _fn(dt)
+
     _cancel = requestAnimationFrame(step)
   }
 
