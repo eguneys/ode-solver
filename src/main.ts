@@ -2,7 +2,6 @@ import { Canvas, loop } from './debug'
 import { Vec2, Rectangle } from './vec2'
 import { Vec3, Quat } from './math4'
 import { XPBD, Particle, Constraint, 
-  DLinePlusConstraint,
   DistanceCollideConstraint,
   DistanceConstraintPlus,
   DistanceConstraint,
@@ -16,7 +15,7 @@ const rect_orig = (rect: Rectangle, o: Vec2) => {
     return rect.x1 <= o.x && o.x <= rect.x2 && rect.y1 <= o.y && o.y <= rect.y2
 }
 
-let fen2 = `
+let fen = `
 ########
 #......#
 #rrgg..#
@@ -25,7 +24,7 @@ let fen2 = `
 ########
 `
 
-let fen = `
+let fen2 = `
 ab
 `
 
@@ -35,34 +34,6 @@ export type ParticleInfo = {
   p: Particle,
   char: string,
   pos: Vec2,
-}
-
-const plines_for_particle = (p: Particle, r: number) => {
-
-  return [Vec3.left, Vec3.right, Vec3.up, Vec3.down].map(d => {
-    let p2 = d.scale(r)
-    
-    let a = p2.add(d.perpendicular.scale(r)),
-      b  = p2.add(d.perpendicular.scale(-r))
-
-    return {
-      p,
-      a,
-      b
-    }
-  })
-}
-
-const corners_for_particle = (p: Particle, r: number) => {
-  return [Vec3.left, Vec3.right].flatMap(d => {
-    let p2 = d.scale(r)
-
-    let a = p2.add(d.perpendicular.scale(r)),
-      b = p2.add(d.perpendicular.scale(-r))
-    return [
-      a, b
-    ]
-  })
 }
 
 class Body {
@@ -104,27 +75,11 @@ class Body {
 
     i_solids.forEach(_ => {
 
-      let _plines = plines_for_particle(_.p, 60)
-
       i_solids.forEach(_2 => {
         if (_ === _2) { return }
 
-        let _corners2 = corners_for_particle(_2.p, 60)
-
-        //new DistanceCollideConstraint(_.p, _2.p, 120, 1, 0)
-
-        //_plines = [_plines[0]]
-        //_corners2 = [_corners2[0]]
-
-        let _cs = _plines.flatMap(_pline =>
-          _corners2.map(_corner2 =>
-            new DLinePlusConstraint(_pline,
-              _2.p,
-              _corner2,
-              1,
-              1)))
-
-         cs.push(..._cs)
+        let c = new DistanceCollideConstraint(_.p, _2.p, 120, 1, 0)
+        cs.push(c)
       })
     })
 
@@ -164,7 +119,7 @@ class Body {
                                  i2.p,
                                  Vec3.make(v.x, v.y, 0),
                                  1,
-                                 0)
+                                 0, true)
           cs.push(c)
         })
       })
@@ -174,16 +129,14 @@ class Body {
   }
 
   d_c(v: Vec3, p1: ParticleInfo) {
-    let o = Particle.make(Infinity, v, Vec3.zero)
+    let o = Particle.make(120, v, Vec3.zero)
     let o_p1 = Vec3.zero
     let g = this.group_of(p1)
     if (g) {
-
       let _drag_c = g.map(p2 => 
-        new DistanceConstraintPlus(p2.p, o, p1.p.position.sub(p2.p.position).add(o_p1), 0.1, 0))
+        new DistanceConstraintPlus(p2.p, o, p1.p.position.sub(p2.p.position).add(o_p1), 0.5, 1))
         this._drag_c = _drag_c
     }
-
   }
 
   d_c_clear() {
@@ -241,6 +194,9 @@ const app = (element: HTMLElement) => {
           _drag_particle[0] = Vec3.make(o.x, o.y, 0)
         } else {
           let i = b.infos.find(_ => {
+            if (_.char === '.' || _.char === '#') {
+              return false
+            }
             let { x, y } = _.p.position
             return rect_orig(Rectangle.make(x - r/2, y - r/2, r, r), _o)
           })

@@ -1,6 +1,7 @@
 import { Vec3 } from './math4'
 import { tri_orig } from './coll'
 import { Triangle, Vec2, Line } from './vec2'
+import { log_r } from './debug'
 
 export class Particle {
 
@@ -88,42 +89,6 @@ function closest_point_on_segment(p: Vec3, a: Vec3, b: Vec3) {
   return a.add(ab).scale(t)
 }
 
-export class DLinePlusConstraint extends Constraint {
-
-  get tri() {
-    return new Triangle(v2(this.l1.p.position), v2(this.l1.p.position.add(this.l1.a)), v2(this.l1.p.position.add(this.l1.b)))
-  }
-
-  get v2() {
-    return this.p2.position.add(this.v)
-  }
-
-  get C() {
-
-    return 0
-  }
-
-  life = 0
-  Gradient(_p: Particle, i: number) {
-
-    let s = tri_orig(this.tri, v2(this.v2))
-    if (s) {
-
-    }
-    return Vec3.zero
-  }
-
-
-
-  constructor(readonly l1: PLine,
-              readonly p2: Particle,
-              readonly v: Vec3,
-              readonly k: number,
-              readonly alpha: number) {
-                super([l1.p, p2], k, alpha)
-              }
-}
-
 export class FloorConstraint extends Constraint {
   get C() {
     return this._y - this.p1.position.y - this.l0
@@ -172,7 +137,8 @@ export class DistanceConstraintPlus extends Constraint {
               readonly p2: Particle,
               readonly v: Vec3,
               readonly k: number,
-              readonly alpha: number) {
+              readonly alpha: number,
+    readonly no_log?: boolean) {
                 super([p1, p2], k, alpha)
               }
 }

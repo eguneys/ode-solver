@@ -54,3 +54,15 @@ export const loop = (_fn: (dt: number) => void) => {
     cancelAnimationFrame(_cancel)
   }
 }
+
+
+export const log_r = (() => {
+
+  let life = 0
+
+  return (...args: any) => {
+    if (life++ % 1000 === 0) {
+      console.log(...args)
+    }
+  }
+})()
