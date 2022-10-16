@@ -27,6 +27,17 @@ export class Canvas {
     this.ctx.fillStyle = color
     this.ctx.fillRect(x, y, w, h)
   }
+
+
+  line(color: string, lineWidth: number, x1: number, y1: number, x2: number, y2: number) {
+    this.ctx.strokeStyle = color
+    this.ctx.lineWidth = lineWidth
+    this.ctx.beginPath()
+    this.ctx.moveTo(x1, y1)
+    this.ctx.lineTo(x2, y2)
+    this.ctx.closePath()
+    this.ctx.stroke()
+  }
 }
 
 

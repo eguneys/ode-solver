@@ -19,6 +19,7 @@ export const tri_orig = (t0: Triangle, o: Vec2) => {
 
 
 /* http://thirdpartyninjas.com/blog/2008/10/07/line-segment-intersection/ */
+/* https://stackoverflow.com/a/1968345/3994249 */
 export const line_line = (l0: Line, l1: Line) => {
 
   let x1 = l0.x1,

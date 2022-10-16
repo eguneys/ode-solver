@@ -1,8 +1,11 @@
 import { Vec3 } from './math4'
-import { tri_orig } from './coll'
+import { line_line } from './coll'
 import { Triangle, Vec2, Line } from './vec2'
 import { log_r } from './debug'
 
+const v3 = (v2: Vec2) => {
+  return Vec3.make(v2.x, v2.y, 0)
+}
 
 const v2 = (v3: Vec3) => {
   return Vec2.make(v3.x, v3.y)
@@ -18,7 +21,6 @@ function closest_point_on_segment(p: Vec3, a: Vec3, b: Vec3) {
   t = Math.max(0, Math.min(1, (p.dot(ab) - a.dot(ab)) / t))
   return a.add(ab).scale(t)
 }
-
 
 
 export class Particle {
@@ -116,7 +118,6 @@ export class XPBD {
   }
 }
 
-
 export class Border extends Particle {
 
   static _make = (
@@ -128,6 +129,16 @@ export class Border extends Particle {
       let _ = new Border(mass, position, velocity)
       return _._init(r, v_dir)
     }
+
+  get l() {
+
+    let { v_dir, r } = this
+
+    let a = v2(this.position).add(v_dir.scale(r/2)),
+      b = v2(this.position).add(v_dir.scale(-r/2))
+
+    return new Line(a, b)
+  }
 
   r!: number
   v_dir!: Vec2
@@ -141,4 +152,34 @@ export class Border extends Particle {
 
 }
 
+export class BorderBorderConstraint extends Constraint {
+
+
+  get C() {
+    return 6
+  }
+
+
+  Gradient(b1: Border, i: number) {
+    let b2 = b1 === this.b1 ? this.b2 : this.b1
+
+    let _ = line_line(b1.l, b2.l)
+    
+    if (_) {
+      return v3(b1.l.normal!.normalize!)
+    }
+
+    return Vec3.zero
+  }
+
+
+  constructor(readonly b1: Border,
+    readonly b2: Border,
+    readonly l0: number,
+    readonly k: number,
+    readonly alpha: number) {
+    super([b1, b2], k, alpha)
+  }
+
+}
 
