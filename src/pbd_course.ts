@@ -113,22 +113,17 @@ export class FloorConstraint extends Constraint {
 
 export class DistanceConstraintPlus extends Constraint {
 
-  get p1_position() {
-    return this.p1.position.add(this.v)
-  }
-
-  get p2_position() {
-    return this.p2.position.sub(this.v)
-  }
-
   get C() {
-    return this.p2.position.sub(this.p1_position).length
+    return this.p1.position.add(this.v).sub(this.p2.position).length
   }
 
 
   Gradient(_p: Particle, i: number) {
-    let _p2 = _p === this.p1 ? this.p2_position : this.p1_position
-    return _p.position.sub(_p2).normalize
+    if (_p === this.p2) {
+      return this.p2.position.sub(this.p1.position.add(this.v)).normalize
+    } else {
+      return Vec3.zero
+    }
   }
 
 
@@ -176,7 +171,8 @@ export class DistanceCollideConstraint extends Constraint {
     return _p.position.sub(_p2.position).normalize
   }
 
-  constructor(readonly p1: Particle, readonly p2: Particle, 
+  constructor(readonly p1: Particle, 
+              readonly p2: Particle, 
               readonly l0: number, 
               readonly k: number,
               readonly alpha: number) {
