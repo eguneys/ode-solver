@@ -2,7 +2,7 @@ import { Canvas, loop } from './debug'
 import { Vec2, Rectangle } from './vec2'
 import { Vec3, Quat } from './math4'
 import { XPBD, Particle, Constraint, 
-  DLineLineConstraint,
+  DLinePlusConstraint,
   DistanceCollideConstraint,
   DistanceConstraintPlus,
   DistanceConstraint,
@@ -40,7 +40,7 @@ export type ParticleInfo = {
 const plines_for_particle = (p: Particle, r: number) => {
 
   return [Vec3.left, Vec3.right, Vec3.up, Vec3.down].map(d => {
-    let p2 = p.position.add(d.scale(r))
+    let p2 = d.scale(r)
     
     let a = p2.add(d.perpendicular.scale(r)),
       b  = p2.add(d.perpendicular.scale(-r))
@@ -50,6 +50,18 @@ const plines_for_particle = (p: Particle, r: number) => {
       a,
       b
     }
+  })
+}
+
+const corners_for_particle = (p: Particle, r: number) => {
+  return [Vec3.left, Vec3.right].flatMap(d => {
+    let p2 = d.scale(r)
+
+    let a = p2.add(d.perpendicular.scale(r)),
+      b = p2.add(d.perpendicular.scale(-r))
+    return [
+      a, b
+    ]
   })
 }
 
@@ -92,21 +104,25 @@ class Body {
 
     i_solids.forEach(_ => {
 
-      let _plines = plines_for_particle(_.p, 120)
+      let _plines = plines_for_particle(_.p, 60)
 
       i_solids.forEach(_2 => {
         if (_ === _2) { return }
 
-        let _plines2 = plines_for_particle(_2.p, 120)
+        let _corners2 = corners_for_particle(_2.p, 60)
 
         //new DistanceCollideConstraint(_.p, _2.p, 120, 1, 0)
 
+        //_plines = [_plines[0]]
+        //_corners2 = [_corners2[0]]
+
         let _cs = _plines.flatMap(_pline =>
-          _plines2.map(_pline2 =>
-            new DLineLineConstraint(_pline,
-                                       _pline2,
-                                       1,
-                                       1)))
+          _corners2.map(_corner2 =>
+            new DLinePlusConstraint(_pline,
+              _2.p,
+              _corner2,
+              1,
+              1)))
 
          cs.push(..._cs)
       })

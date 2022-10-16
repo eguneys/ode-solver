@@ -1,4 +1,6 @@
 import { Vec3 } from './math4'
+import { tri_orig } from './coll'
+import { Triangle, Vec2, Line } from './vec2'
 
 export class Particle {
 
@@ -72,6 +74,10 @@ export type PLine = {
   b: Vec3
 }
 
+const v2 = (v3: Vec3) => {
+  return Vec2.make(v3.x, v3.y)
+}
+
 function closest_point_on_segment(p: Vec3, a: Vec3, b: Vec3) {
   let ab = b.sub(a)
   let t = ab.dot(ab)
@@ -82,46 +88,27 @@ function closest_point_on_segment(p: Vec3, a: Vec3, b: Vec3) {
   return a.add(ab).scale(t)
 }
 
-export class DLineLineConstraint extends Constraint {
+export class DLinePlusConstraint extends Constraint {
 
-  get p2_ab() {
-    let p2_ab = closest_point_on_segment(this.l2.p.position, this.l2.a, this.l2.b)
-    return p2_ab.sub(this.l2.p.position).normalize
+  get tri() {
+    return new Triangle(v2(this.l1.p.position), v2(this.l1.p.position.add(this.l1.a)), v2(this.l1.p.position.add(this.l1.b)))
+  }
+
+  get v2() {
+    return this.p2.position.add(this.v)
   }
 
   get C() {
-    let p_a = closest_point_on_segment(this.l1.a, this.l2.a, this.l2.b),
-      p_b = closest_point_on_segment(this.l1.b, this.l2.a, this.l2.b)
 
-    let a_p_a = p_a.sub(this.l1.a),
-      b_p_b = p_b.sub(this.l1.b)
-
-    if (this.p2_ab.dot(a_p_a) > 0) {
-      return a_p_a.length
-    }
-    if (this.p2_ab.dot(b_p_b) > 0) {
-      return b_p_b.length
-    }
     return 0
   }
 
+  life = 0
   Gradient(_p: Particle, i: number) {
-    if (_p === this.l2.p) {
-      return Vec3.zero
-    }
 
-    let p_a = closest_point_on_segment(this.l1.a, this.l2.a, this.l2.b),
-      p_b = closest_point_on_segment(this.l1.b, this.l2.a, this.l2.b)
+    let s = tri_orig(this.tri, v2(this.v2))
+    if (s) {
 
-    let a_p_a = p_a.sub(this.l1.a),
-      b_p_b = p_b.sub(this.l1.b)
-
-    if (this.p2_ab.dot(a_p_a) > 0) {
-      console.log(this.l1, this.l2, a_p_a.normalize)
-      return a_p_a.normalize
-    }
-    if (this.p2_ab.dot(b_p_b) > 0) {
-      return b_p_b.normalize
     }
     return Vec3.zero
   }
@@ -129,10 +116,11 @@ export class DLineLineConstraint extends Constraint {
 
 
   constructor(readonly l1: PLine,
-              readonly l2: PLine,
+              readonly p2: Particle,
+              readonly v: Vec3,
               readonly k: number,
               readonly alpha: number) {
-                super([l1.p, l2.p], k, alpha)
+                super([l1.p, p2], k, alpha)
               }
 }
 

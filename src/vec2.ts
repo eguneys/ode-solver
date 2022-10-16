@@ -439,6 +439,22 @@ export class Line {
 
   }
 
+  get x1() {
+    return this.a.x
+  }
+
+  get x2() {
+    return this.b.x
+  }
+
+  get y1() {
+    return this.a.y
+  }
+
+  get y2() {
+    return this.b.y
+  }
+
   constructor(readonly a: Vec2, readonly b: Vec2) {}
 
 }
@@ -500,4 +516,10 @@ export class Rectangle {
   transform(m: Matrix): Rectangle {
     return new Rectangle(this.vertices.map(_ => m.mVec2(_)))
   }
+}
+
+
+export class Triangle {
+
+  constructor(readonly a: Vec2, readonly b: Vec2, readonly c: Vec2) {}
 }
