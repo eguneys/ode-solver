@@ -52,10 +52,10 @@ export class Mouse {
     $_.addEventListener('mousedown', dragStart, { passive: false }) 
     $_.addEventListener('contextmenu', contextMenu)
 
-    document.addEventListener('mousemove', dragMove)
+    document.addEventListener('mousemove', dragMove, { passive: false })
     document.addEventListener('mouseup', dragEnd)
 
-    document.addEventListener('touchmove', dragMove)
+    document.addEventListener('touchmove', dragMove, { passive: false })
     document.addEventListener('touchend', dragEnd)
 
     return () => {
