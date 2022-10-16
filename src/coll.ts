@@ -1,4 +1,20 @@
 import { Triangle, Vec2, Line } from './vec2'
+import { Vec3 } from './math4'
+
+
+export function closest_point_on_segment(p: Vec3, a: Vec3, b: Vec3) {
+  let ab = b.sub(a)
+  let t = ab.dot(ab)
+  if (t === 0) {
+    return a.clone
+  }
+  t = Math.max(0, Math.min(1, (p.dot(ab) - a.dot(ab)) / t))
+  return a.add(ab.scale(t))
+}
+
+
+
+
 
 /* https://stackoverflow.com/questions/2049582/how-to-determine-if-a-point-is-in-a-2d-triangle */
 

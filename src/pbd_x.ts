@@ -3,23 +3,12 @@ import { line_line } from './coll'
 import { Triangle, Vec2, Line } from './vec2'
 import { log_r } from './debug'
 
-const v3 = (v2: Vec2) => {
+export const v3 = (v2: Vec2) => {
   return Vec3.make(v2.x, v2.y, 0)
 }
 
-const v2 = (v3: Vec3) => {
+export const v2 = (v3: Vec3) => {
   return Vec2.make(v3.x, v3.y)
-}
-
-
-function closest_point_on_segment(p: Vec3, a: Vec3, b: Vec3) {
-  let ab = b.sub(a)
-  let t = ab.dot(ab)
-  if (t === 0) {
-    return a.clone
-  }
-  t = Math.max(0, Math.min(1, (p.dot(ab) - a.dot(ab)) / t))
-  return a.add(ab).scale(t)
 }
 
 
@@ -183,3 +172,30 @@ export class BorderBorderConstraint extends Constraint {
 
 }
 
+
+export class DistanceConstraintPlus extends Constraint {
+
+  get C() {
+    return this.p1.position.add(this.v).sub(this.p2.position).length
+  }
+
+
+  Gradient(_p: Particle, i: number) {
+    if (_p === this.p2) {
+      return this.p2.position.sub(this.p1.position.add(this.v)).normalize
+    } else {
+      return Vec3.zero
+    }
+  }
+
+
+
+  constructor(readonly p1: Particle,
+              readonly p2: Particle,
+              readonly v: Vec3,
+              readonly k: number,
+              readonly alpha: number,
+    readonly no_log?: boolean) {
+                super([p1, p2], k, alpha)
+              }
+}
