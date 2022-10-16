@@ -1,258 +1,104 @@
 import { Canvas, loop } from './debug'
+import { Vec3 } from './math4'
 import { Vec2, Rectangle } from './vec2'
-import { Vec3, Quat } from './math4'
-import { XPBD, Particle, Constraint, 
-  DistanceCollideConstraint,
-  DistanceConstraintPlus,
-  DistanceConstraint,
-  FloorConstraint } from './pbd_course'
-import { make_drag } from './drag'
-import { Ref, onScrollHandlers } from './ref'
-
-let v_screen = Vec2.make(1080, 1920)
+import { Particle } from './pbd_course'
+import { DistanceConstraintPlus, Constraint } from './pbd_course'
 
 const rect_orig = (rect: Rectangle, o: Vec2) => {
     return rect.x1 <= o.x && o.x <= rect.x2 && rect.y1 <= o.y && o.y <= rect.y2
 }
 
-let fen = `
-########
-#......#
-#rrgg..#
-#rrgg..#
-#......#
-########
-`
 
-let fen2 = `
-ab
-`
 
-export type Fen = string
+const v3 = (v2: Vec2) => Vec3.make(v2.x, v2.y, 0)
+
+let ns = 3
+let v_ns = Vec2.make(ns, ns)
 
 export type ParticleInfo = {
   p: Particle,
-  char: string,
-  pos: Vec2,
+  v_sub: Vec2
 }
 
 class Body {
 
-  static from_fen = (fen: Fen) => {
+  get particles() {
+    return this._particles.map(_ => _.p)
+  }
 
-    let gs: Array<Array<ParticleInfo>> = []
-    let cs: Array<Constraint> = []
-    let infos: Array<ParticleInfo> = []
+  get _r_sub() {
+    return this.r / ns
+  }
 
-    let nb_rows,
-    nb_cols
-    let ms = new Map()
-    fen.split('\n').forEach((lines: string, row: number) => {
-      nb_rows = row + 1
-      lines.split('').forEach((char: string, col: number) => {
-        nb_cols = col + 1
-        ms.set(Vec2.make(col, row).key, char)
-      })
-    })
+  _drag_c: Array<Constraint>
+  _particles: Array<ParticleInfo>
 
-    for (let [key, char] of ms) {
-      let v = Vec2.from_key(key)
+  constructor(readonly o: Vec2, readonly r: number) {
+
+    this._drag_c = []
+
+    this._particles = [...Array(ns).keys()]
+    .flatMap(col => [...Array(ns).keys()].map(row => {
       let mass = 100
-      if (char === '#') {
-        mass = Infinity
-      }
-      let p = Particle.make(mass, Vec3.make(100 + v.x * 120, 100 + v.y * 120, 0), Vec3.zero)
+      let v_sub = Vec2.make(col, row)
+      let p_pos = o.add(
+        v_sub.sub(v_ns.half).mul(v_ns.mul_inverse.scale(r)))
 
-      let i = {
+      let p = Particle.make(mass, v3(p_pos), Vec3.zero)
+
+      return {
         p,
-        char,
-        pos: v
+        v_sub
       }
-      infos.push(i)
-    }
-
-    let i_solids = infos.filter(_ => _.char !== '.')
-
-    i_solids.forEach(_ => {
-
-      i_solids.forEach(_2 => {
-        if (_ === _2) { return }
-
-        let c = new DistanceCollideConstraint(_.p, _2.p, 120, 1, 0)
-        cs.push(c)
-      })
-    })
-
-    function add_neighbours_to_group(_: ParticleInfo, group: Array<ParticleInfo>) {
-      if (gs.find(g => g.find(_a => _a === _))) {
-        return
-      }
-
-      if (group.length === 0) {
-        gs.push(group)
-      }
-
-      group.push(_)
-
-      _.pos.neighbours.forEach(vn => {
-        let n = i_solids.find(_ => _.pos.key === vn.key)
-        if (n) {
-          if (n.char === _.char) {
-            add_neighbours_to_group(n, group)
-          }
-        }
-      })
-    }
-    i_solids.forEach(_ => {
-      add_neighbours_to_group(_, [])
-    })
-
-    gs.forEach(g => {
-      g.forEach(i => {
-        g.forEach(i2 => {
-          if (i.char === '#') { return }
-          if (i === i2) { return }
-          
-          let v = i2.pos.sub(i.pos).scale(120)
-
-          let c = new DistanceConstraintPlus(i.p,
-                                 i2.p,
-                                 Vec3.make(v.x, v.y, 0),
-                                 1,
-                                 0, true)
-          cs.push(c)
-        })
-      })
-    })
-
-    return new Body(gs, infos.map(_ => _.p), cs, infos)
+    }))
   }
 
-  d_c(v: Vec3, p1: ParticleInfo) {
+  find_drag(o: Vec2) {
+    return this._particles
+    .find(_ => {
+      let { x, y } = _.p.position
+      rect_orig(Rectangle.make(x, y, this._r_sub, this._r_sub), o)
+    })
+  }
+
+  drag_constraint(v: Vec3, p1: ParticleInfo) {
     let o = Particle.make(120, v, Vec3.zero)
-    let o_p1 = Vec3.zero
-    let g = this.group_of(p1)
-    if (g) {
-      let _drag_c = g.map(p2 => 
-        new DistanceConstraintPlus(p2.p, o, p1.p.position.sub(p2.p.position).add(o_p1), 0.5, 1))
-        this._drag_c = _drag_c
-    }
+    this._drag_c = this._particles.map(p2 =>
+        new DistanceConstraintPlus(p2.p, o, p1.p.position.sub(p2.p.position), 0.5, 1))
   }
-
-  d_c_clear() {
-    this._drag_c = undefined
-  }
-
-  group_of(p: ParticleInfo) {
-    return this.groups.find(_ => _.find(_ => _ === p))
-  }
-
-  get constraints() {
-    if (this._drag_c) {
-      return [...this._constraints, ...this._drag_c]
-    }
-    return this._constraints
-  }
-
-  _drag_c?: Array<Constraint>
-  get xpbd() {
-    return new XPBD(2, this.particles, this.constraints)
-  }
-
-  constructor(readonly groups: Array<Array<ParticleInfo>>,
-              readonly particles: Array<Particle>,
-              readonly _constraints: Array<Constraint>,
-              readonly infos: Array<ParticleInfo>) {
-              
-              }
-
-
-  update(dt: number) {
-    this.xpbd.update(dt)
-  }
-
 }
 
 
-let r = 100
+
 const app = (element: HTMLElement) => {
+
   let g = Canvas.make(1080, 1920, element)
 
+  let b = new Body(Vec2.make(100, 100), 200)
 
-  let b = Body.from_fen(fen.trim())
 
-  let ref = Ref.make(element)
 
-  let _drag_particle: [Vec3, ParticleInfo] | undefined = undefined
 
-  make_drag({
-    on_drag(e) {
-      if (e.m) {
-        let _o = ref.get_normal_at_abs_pos(e.e).mul(v_screen)
-        let o = ref.get_normal_at_abs_pos(e.m).mul(v_screen)
-        if (_drag_particle) {
-          _drag_particle[0] = Vec3.make(o.x, o.y, 0)
-        } else {
-          let i = b.infos.find(_ => {
-            if (_.char === '.' || _.char === '#') {
-              return false
-            }
-            let { x, y } = _.p.position
-            return rect_orig(Rectangle.make(x - r/2, y - r/2, r, r), _o)
-          })
-
-          if (i) {
-            _drag_particle = [Vec3.make(o.x, o.y, 0), i]
-          } 
-        }
-      }
-    },
-    on_up() {
-      _drag_particle = undefined
-      //b.d_c_clear()
-    }
-  }, element)
-
-  onScrollHandlers(() => {
-    ref.$clear_bounds()
-  })
 
   loop((dt: number) => {
 
-
-    if (_drag_particle) {
-      b.d_c(..._drag_particle)
-    }
-
-    b.update(dt)
-
     g.clear()
-    g.fr('hsl(0, 20%, 50%)', 0, 0, 1080, 1920)
+    g.fr('hsl(0, 20%, 30%)', 0, 0, 1080, 1920)
 
-    b.infos.forEach(i => {
-      let group = b.group_of(i)
-      let { p, char } = i
+
+    b.particles.forEach(p => {
       let { x, y } = p.position
 
       let color = 'hsl(0, 50%, 50%)'
-      if (char === '.') {
-        return
-      }
-      if (char === '#') {
-        color = 'hsl(0, 30%, 30%)'
-      }
 
-      if (group?.length === 2) {
-        color = 'hsl(30, 50%, 50%)'
-      }
-
-      if (group?.length === 4) {
-        color = 'hsl(50, 50%, 50%)'
-      }
-
-      g.fr(color, x - r/2, y - r/2, r, r)
+      g.fr(color, x, y, 10, 10)
     })
+
+
   })
+
 }
+
+
 
 app(document.getElementById('app')!)
