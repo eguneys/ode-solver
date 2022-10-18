@@ -28,8 +28,6 @@ export class Contact {
 
 
   collision_constraint(e1: Entity, e2: Entity) {
-
-
     let r1_wc = this.collision_point1.sub(e1.position)
     let r2_wc = this.collision_point2.sub(e2.position)
 
@@ -151,7 +149,7 @@ export class Entity {
       0.3,
       0.3,
       r,
-      [],
+      [new Collider()],
       true,
       true)
   }
