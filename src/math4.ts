@@ -290,6 +290,19 @@ export class Mat4 {
     ])
   }
 
+
+  get transpose(): Mat4 {
+
+    let m = this.out
+
+    return Mat4.make([
+      m[0], m[4], m[8], m[12],
+      m[1], m[5], m[9], m[13],
+      m[2], m[6], m[10], m[14],
+      m[3], m[7], m[11], m[15]
+    ])
+  }
+
   get inverse(): Mat4 | undefined {
 
     let [
@@ -455,6 +468,28 @@ export class Quat {
     return Quat.make([0, 0, 0, 1])
   }
 
+  get mat4() {
+    return Mat4.from_quat(this)
+  }
+
+  set x(v: number) {
+    this.out[0] = v
+  }
+
+  set y(v: number) {
+    this.out[1] = v
+  }
+
+  set z(v: number) {
+    this.out[2] = v
+  }
+
+  set w(v: number) {
+    this.out[3] = v
+  }
+
+
+
   get x() {
     return this.out[0]
   }
@@ -490,6 +525,15 @@ export class Quat {
     return new Quat([-this.x, -this.y, -this.z, this.w])
   }
 
+  get inverse() {
+
+    let [a0, a1, a2, a3] = this.out
+
+    let dot = a0 * a0 + a1 * a1 + a2 * a2 + a3 * a3
+    let invDot = dot ? 1.0 / dot : 0
+
+    return new Quat([-a0 * invDot, -a1 * invDot, -a2 * invDot, a3 * invDot])
+  }
 
   set_in(x: number, y: number, z: number, w: number) {
     let m = this.out

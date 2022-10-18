@@ -93,8 +93,9 @@ export class XPBD {
 
     for (let i = 0; i < n; i++) {
       particles.forEach(_i => {
-        _i.velocity.add_in(_i.a.scale(dts))
         _i.position0 = _i.position
+
+        _i.velocity.add_in(_i.a.scale(dts))
         _i.position.add_in(_i.velocity.scale(dts))
       })
       constraints.forEach(C => {
