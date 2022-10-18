@@ -78,6 +78,13 @@ export class Constraint {
   }
 }
 
+export class Force {
+
+  static make = (force: Vec3, position: Vec3) => new Force(force, position)
+
+  constructor(readonly force: Vec3, readonly position: Vec3) {}
+}
+
 export class Entity {
 
   active: boolean
@@ -98,16 +105,14 @@ export class Entity {
   inertia_tensor: Mat4
   inverse_inertia_tensor: Mat4
 
-
-  external_force: Vec3
-  external_torque: Vec3
-
   colliders: Array<Collider>
 
   bounding_sphere_radius: number
 
   dynamic_friction_coefficient: number
   restitution_coefficient: number
+
+  forces: Array<Force>
 
   get inverse_mass() {
     return 1/this.mass
@@ -122,6 +127,50 @@ export class Entity {
   }
 
 
+  get external_force() {
+    let center_of_mass = Vec3.zero
+    return this.forces.reduce((acc, _) => acc.add_in(_.force), Vec3.zero)
+  }
+
+  get external_torque() {
+    let center_of_mass = Vec3.zero
+    return this.forces.reduce((acc, _) => {
+      let distance = _.position.sub(center_of_mass)
+      return acc.add_in(distance.cross(_.force))
+    }, Vec3.zero)
+  }
+
+
+  static make_fixed = (position: Vec3, r: number) => {
+
+    return new Entity(
+      position,
+      Quat.identity,
+      10,
+      Vec3.zero,
+      0.3,
+      0.3,
+      r,
+      [],
+      true,
+      true)
+  }
+
+  static make_box = (position: Vec3, mass: number, r: number) => {
+
+    return new Entity(
+      position,
+      Quat.identity,
+      mass,
+      Vec3.zero,
+      0.3,
+      0.3,
+      r,
+      [new Collider()],
+      true,
+      false)
+  }
+
   constructor(position: Vec3,
               rotation: Quat,
               mass: number,
@@ -129,7 +178,12 @@ export class Entity {
               dynamic_friction_coefficient: number,
               restitution_coefficient: number,
               bounding_sphere_radius: number,
-              colliders: Array<Collider>) {
+              colliders: Array<Collider>,
+              active: boolean,
+              fixed: boolean,
+             ) {
+
+    this.forces = []
 
     this.restitution_coefficient = restitution_coefficient
     this.dynamic_friction_coefficient = dynamic_friction_coefficient
@@ -137,8 +191,8 @@ export class Entity {
     this.bounding_sphere_radius = bounding_sphere_radius
     this.colliders = colliders
 
-    this.active = false
-    this.fixed = false
+    this.active = active
+    this.fixed = fixed
 
     this.previous_position = position
     this.position = position
@@ -155,10 +209,6 @@ export class Entity {
 
     this.inertia_tensor = Mat4.identity
     this.inverse_inertia_tensor = Mat4.identity
-
-    this.external_force = Vec3.zero
-    this.external_torque = Vec3.zero
-
   }
 
 
@@ -168,7 +218,6 @@ export class XPBD {
 
   simulate(dt: number) {
     let h = dt / this.num_substeps
-
 
     let broad_collision_pairs: Array<BroadCollisionPair> = []
 
@@ -181,7 +230,6 @@ export class XPBD {
       }
 
     })
-
 
     let external_constraints: Array<Constraint> = []
 
@@ -272,8 +320,6 @@ export class XPBD {
           e.angular_velocity = Vec3.make(delta_q.x, delta_q.y, delta_q.z).scale(-2/h)
         }
       })
-
-
 
       constraints.forEach(cs => {
 
