@@ -24,7 +24,7 @@ export class Vec2 {
     return [Vec2.up, Vec2.down, Vec2.left, Vec2.right].map(_ => _.add(this))
   }
 
-  get vs(): Array<number> {
+  get vs(): [number, number] {
     return [this.x, this.y]
   }
 
