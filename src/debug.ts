@@ -22,6 +22,15 @@ export class Canvas {
     this.ctx.clearRect(0, 0, this.width, this.height)
   }
 
+  tr(x: number, y: number, px: number, py: number, angle: number) {
+    this.ctx.translate(x, y)
+    this.ctx.rotate(angle)
+    this.ctx.translate(-px, -py)
+  }
+
+  resetTransform() {
+    this.ctx.resetTransform()
+  }
 
   fr(color: string, x: number, y: number, w: number, h: number) {
     this.ctx.fillStyle = color
