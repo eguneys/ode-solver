@@ -36,7 +36,7 @@ export type BodyInfo = {
 
 let box_shrink_off = 16
 
-let damping = 0.8
+let damping = 0.98
 let mass = 20
 let angularDamping = 1
 
@@ -228,7 +228,7 @@ const app = (element: HTMLElement) => {
             c_mouse = new p2.RevoluteConstraint(b_mouse, _body, {
               localPivotA: _o.vs,
               localPivotB: localPoint,
-              maxForce: 4000 * _body.mass
+              maxForce: 10000 * _body.mass
             })
             world.addBody(b_mouse)
             world.addConstraint(c_mouse!)
@@ -244,7 +244,7 @@ const app = (element: HTMLElement) => {
       world.removeBody(b_mouse)
       _drag_particle = undefined
 
-      _v_snap_t = ticks.thirds
+      _v_snap_t = ticks.half
     }
   }, element)
 
@@ -273,9 +273,10 @@ const app = (element: HTMLElement) => {
           let cs_body = new p2.Body({ mass: 0, position: [_x, _y] })
           let cs_constraint = new p2.DistanceConstraint(cs_body, _.body, { 
             distance: 0,
-            maxForce: 1000 * _.body.mass
+            maxForce: 10000 * _.body.mass
           })
-          cs_constraint.setStiffness(10000)
+          cs_constraint.setStiffness(10000000)
+          cs_constraint.setRelaxation(10)
 
           world.addBody(cs_body)
           world.addConstraint(cs_constraint)
@@ -287,7 +288,7 @@ const app = (element: HTMLElement) => {
       }
     }
 
-    world.step(1/60, dt/1000, 3)
+    world.step(1/60, dt/1000, 15)
 
     g.clear()
     g.fr('hsl(0, 8%, 15%)', 0, 0, 1080, 1920)
