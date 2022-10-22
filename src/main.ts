@@ -34,7 +34,11 @@ export type BodyInfo = {
   color: string
 }
 
-let box_shrink_off = 10
+let box_shrink_off = 16
+
+let damping = 0.8
+let mass = 20
+let angularDamping = 1
 
 const from_fen = (fen: string) => {
 
@@ -88,9 +92,9 @@ const from_fen = (fen: string) => {
       let body = new p2.Body({
         fixedRotation: true,
         position: v.scale(100).add(Vec2.make(100, 100)).vs,
-        angularDamping: 1,
-        damping: 0.98,
-        mass: 20
+        angularDamping,
+        damping,
+        mass
       })
 
       body.addShape(new p2.Convex({ vertices}))
@@ -109,9 +113,9 @@ const from_fen = (fen: string) => {
       let body = new p2.Body({
         fixedRotation: true,
         position: v.scale(100).add(Vec2.make(100, 100)).vs,
-        angularDamping: 1,
-        damping: 0.98,
-        mass: 20
+        angularDamping,
+        damping,
+        mass
       })
 
       body.addShape(new p2.Convex({ vertices}))
@@ -130,9 +134,9 @@ const from_fen = (fen: string) => {
       let body = new p2.Body({
         fixedRotation: true,
         position: v.scale(100).add(Vec2.make(100, 100)).vs,
-        angularDamping: 1,
-        damping: 0.98,
-        mass: 20
+        angularDamping,
+        damping,
+        mass
       })
 
       body.addShape(new p2.Convex({ vertices}))
@@ -153,9 +157,9 @@ const from_fen = (fen: string) => {
       let body = new p2.Body({
         position: v.scale(100).add(Vec2.make(100, 100)).vs,
         fixedRotation: true,
-        angularDamping: 1,
-        damping: 0.98,
-        mass: 20
+        angularDamping,
+        damping,
+        mass
       })
 
       body.addShape(new p2.Convex({ vertices}))
@@ -204,6 +208,8 @@ const app = (element: HTMLElement) => {
       _drag_constraints.forEach(_ => world.removeConstraint(_))
       _drag_bodies = []
       _drag_constraints = []
+
+
       if (e.m) {
         let _o = ref.get_normal_at_abs_pos(e.e).mul(v_world)
         let o = ref.get_normal_at_abs_pos(e.m).mul(v_world)
@@ -218,7 +224,7 @@ const app = (element: HTMLElement) => {
 
             let localPoint = p2.vec2.create()
             _body.toLocalFrame(localPoint, _o.vs)
-            localPoint = Vec2.make(...localPoint).scale(0.1).vs
+            localPoint = Vec2.make(...localPoint).scale(0.9).vs
             c_mouse = new p2.RevoluteConstraint(b_mouse, _body, {
               localPivotA: _o.vs,
               localPivotB: localPoint,
