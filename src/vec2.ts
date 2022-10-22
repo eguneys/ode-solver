@@ -24,6 +24,22 @@ export class Vec2 {
     return [Vec2.up, Vec2.down, Vec2.left, Vec2.right].map(_ => _.add(this))
   }
 
+  get right() {
+    return Vec2.right.add(this)
+  }
+
+  get left() {
+    return Vec2.left.add(this)
+  }
+
+  get up() {
+    return Vec2.up.add(this)
+  }
+
+  get down() {
+    return Vec2.down.add(this)
+  }
+
   get vs(): [number, number] {
     return [this.x, this.y]
   }
@@ -507,7 +523,7 @@ export class Rectangle {
 
 
   larger(r: number) {
-    return Rectangle.make(this.x - r, this.y - r,
+    return Rectangle.make(this.x - r/2, this.y - r/2,
                           this.w + r, this.h + r)
   }
 
