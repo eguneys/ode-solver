@@ -42,7 +42,7 @@ export class GridBuilder {
       }
 
       let v = Vec2.from_key(key)
-      let body = body_by_char[char]
+      let body = body_by_char[char]?.slice(0)
 
       if (!body) {
         continue

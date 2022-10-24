@@ -12,12 +12,11 @@ let fen2 = `
   #nno.o.#
   #logglo#
   #logglo#
-  ###...##
-  ########
+  ###.####
 `
 
 let fen = `
-o
+##
 `
 
 
@@ -29,10 +28,36 @@ const color_by_char: any = {
   'g': 'hsl(90, 60%, 60%)'
 }
 
+let v_screen = Vec2.make(1080, 1920)
+let v_world = v_screen.scale(1)
+
 const app = (element: HTMLElement) => {
   let g = Canvas.make(1080, 1920, element)
 
   let grid = GridBuilder.from_fen(fen2.trim())
+
+
+  let ref = Ref.make(element)
+  onScrollHandlers(() => {
+    ref.$clear_bounds()
+  })
+
+
+  make_drag({
+    on_drag(e) {
+      if (e.m) {
+        let _o = ref.get_normal_at_abs_pos(e.e).mul(v_world)
+        let o = ref.get_normal_at_abs_pos(e.m).mul(v_world)
+
+        console.log(o)
+
+      }
+    },
+    on_up() {
+    }
+  }, element)
+
+
 
   let r = 100
   loop((dt: number) => {
