@@ -19,6 +19,9 @@ export class Vec2 {
   static get up() { return new Vec2(0, -1) }
   static get down() { return new Vec2(0, 1) }
 
+  get floor() {
+    return Vec2.make(Math.floor(this.x), Math.floor(this.y))
+  }
 
   get neighbours() {
     return [Vec2.up, Vec2.down, Vec2.left, Vec2.right].map(_ => _.add(this))

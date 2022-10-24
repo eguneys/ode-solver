@@ -19,6 +19,9 @@ export class Grid {
     this._o_by_body = new Map()
   }
 
+  on(o: Vec2) {
+    return this._map.get(o.key)
+  }
 
   body(o: Vec2, vss: Array<Vec2>) {
     let news = vss.map(_ => _.add(o)).map(v => [v.key, vss] as [Pos, Array<Vec2>])
