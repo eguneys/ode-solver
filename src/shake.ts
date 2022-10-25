@@ -12,6 +12,10 @@ export class Shake2 {
     return this.value.y
   }
 
+  get completed() {
+    return this._fade === 0
+  }
+
   _life: number
   value: Vec2
   _fade: number

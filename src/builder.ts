@@ -1,5 +1,5 @@
 import { Vec2 } from './vec2'
-import { Grid } from './grid'
+import { Grid, Body } from './grid'
 
 const body_by_char: any = {
   '#': [Vec2.zero],
@@ -9,7 +9,6 @@ const body_by_char: any = {
   'g': [Vec2.zero, Vec2.zero.right, Vec2.zero.down, Vec2.zero.right.down]
 }
 
-export type Body = Array<Vec2>
 
 export type GridItem = {
   char: string,
@@ -62,6 +61,10 @@ export class GridBuilder {
     .map(([body, body_on_world]) =>
          [this.info_by_body.get(body)!,
            body_on_world])
+  }
+
+  with_grid(grid: Grid) {
+    return new GridBuilder(grid, this.info_by_body)
   }
 
   constructor(readonly grid: Grid,

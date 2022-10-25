@@ -19,6 +19,10 @@ export class Vec2 {
   static get up() { return new Vec2(0, -1) }
   static get down() { return new Vec2(0, 1) }
 
+  get sign() {
+    return Vec2.make(Math.sign(this.x), Math.sign(this.y))
+  }
+
   get floor() {
     return Vec2.make(Math.floor(this.x), Math.floor(this.y))
   }
