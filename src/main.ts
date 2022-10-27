@@ -5,11 +5,6 @@ import { Vec3 } from './math4'
 import { make_drag } from './drag'
 import { Ref, onScrollHandlers } from './ref'
 
-import p2 from 'p2'
-
-
-let gravity = -10
-
 let v_screen = Vec2.make(1080, 1920)
 let v_world = v_screen.scale(1)
 
