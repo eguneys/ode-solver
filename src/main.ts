@@ -4,6 +4,7 @@ import { Rectangle, Vec2 } from './vec2'
 import { Vec3 } from './math4'
 import { make_drag } from './drag'
 import { Ref, onScrollHandlers } from './ref'
+import { Polygon, sat } from './sat'
 
 let v_screen = Vec2.make(1080, 1920)
 let v_world = v_screen.scale(1)
